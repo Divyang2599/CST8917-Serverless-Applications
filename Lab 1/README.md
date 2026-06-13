@@ -18,7 +18,7 @@ There are two endpoints:
 
 Here is my walkthrough video where I explain the code and show it running live in Azure:
 
-▶️ **[Watch the demo on YouTube](PASTE_YOUR_YOUTUBE_LINK_HERE)**
+▶️ **[Watch the demo on YouTube](https://youtu.be/LBH-AAbdxpw?si=E-bUJ0uiQSNw9q0Z)**
 
 > Replace the link above with your actual YouTube video URL.
 
