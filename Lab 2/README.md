@@ -12,7 +12,7 @@ A serverless app that **automatically analyzes any image the moment it is upload
 
 **Watch the project running (local + cloud):** [PASTE YOUR YOUTUBE LINK HERE]
 
-The video shows the full pipeline: uploading an image, the four analyses firing **in parallel** in the live logs, and the final report returned from the HTTP endpoint - both locally and deployed on Azure.
+The video shows the full pipeline: uploading an image, the four analyses firing **in parallel** in the live logs, and the final report returned from the HTTP endpoint, both locally and deployed on Azure.
 
 ---
 
