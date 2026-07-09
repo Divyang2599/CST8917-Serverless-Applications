@@ -2,7 +2,7 @@
 
 A serverless app that **automatically analyzes any image the moment it is uploaded** — built with **Azure Durable Functions** in Python.
 
-**Course:** CST8917 – Serverless Applications · Lab 2
+**Course:** CST8917 - Serverless Applications · Lab 2
 **Author:** Divyang Lodariya — Cloud Development & Operations, Algonquin College
 **GitHub:** [@Divyang2599](https://github.com/Divyang2599)
 
@@ -225,4 +225,4 @@ AI assistance (Anthropic's **Claude**) was used during this project for explaini
 
 ---
 
-> Course: **CST8917 – Serverless Applications** · Lab 2
+> Course: **CST8917 - Serverless Applications** · Lab 2
