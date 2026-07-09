@@ -219,10 +219,4 @@ The orchestrator passes the **blob name** to each activity, and each activity re
 
 ---
 
-## AI Disclosure
-
-AI assistance (Anthropic's **Claude**) was used during this project for explaining Durable Functions concepts, scaffolding, and reviewing code.
-
----
-
 > Course: **CST8917 - Serverless Applications** · Lab 2
