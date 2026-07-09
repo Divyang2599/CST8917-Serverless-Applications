@@ -1,0 +1,24 @@
+# Secrets — NEVER commit this file (it holds your connection strings / keys)
+local.settings.json
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.python_packages/
+
+# Azure Functions build artifacts
+bin/
+obj/
+
+# Azurite local emulator data
+.azurite/
+__azurite_db*__.json
+__blobstorage__/
+__queuestorage__/
+__tablestorage__/
+AzuriteConfig
+
+# IDE
+.idea/
