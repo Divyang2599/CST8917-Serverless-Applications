@@ -1,10 +1,10 @@
 # Smart Image Analyzer
 
-A serverless app that **automatically analyzes any image the moment it is uploaded** — built with **Azure Durable Functions** in Python.
+A serverless app that **automatically analyzes any image the moment it is uploaded** - built with **Azure Durable Functions** in Python.
 
-**Course:** CST8917 - Serverless Applications · Lab 2
-**Author:** Divyang Lodariya — Cloud Development & Operations, Algonquin College
-**GitHub:** [@Divyang2599](https://github.com/Divyang2599)
+**Course:** CST8917 - Serverless Applications · Lab 2  
+**Author:** Divyang Lodariya - Cloud Development & Operations, Algonquin College  
+**GitHub:** [@Divyang2599](https://github.com/Divyang2599)  
 
 ---
 
@@ -12,7 +12,7 @@ A serverless app that **automatically analyzes any image the moment it is upload
 
 **Watch the project running (local + cloud):** [PASTE YOUR YOUTUBE LINK HERE]
 
-The video shows the full pipeline: uploading an image, the four analyses firing **in parallel** in the live logs, and the final report returned from the HTTP endpoint — both locally and deployed on Azure.
+The video shows the full pipeline: uploading an image, the four analyses firing **in parallel** in the live logs, and the final report returned from the HTTP endpoint, both locally and deployed on Azure.
 
 ---
 
@@ -20,12 +20,12 @@ The video shows the full pipeline: uploading an image, the four analyses firing 
 
 Think of it like a small **factory line** for images. A file arrives, and here is what happens:
 
-1. **The doorbell** notices an image was uploaded and says *"A file arrived — start the line."*
+1. **The doorbell** notices an image was uploaded and says *"A file arrived - start the line."*
 2. **The manager** takes over and hands the image to **four workers at the same time**.
 3. **The four workers** each do one job in parallel:
    - one finds the **dominant colors**
-   - one **detects objects** (mock — placeholder for a real AI vision service)
-   - one **reads text / OCR** (mock — placeholder for a real OCR service)
+   - one **detects objects** (mock - placeholder for a real AI vision service)
+   - one **reads text / OCR** (mock - placeholder for a real OCR service)
    - one reads the **real metadata** (width, height, format, EXIF)
 4. **The report builder** waits for all four to finish, then combines their answers into one report.
 5. **The filing cabinet** saves that report to Azure Table Storage.
@@ -39,11 +39,11 @@ Upload an image → get a full analysis back automatically.
 
 This lab is about two Durable Functions patterns working together:
 
-**Fan-out / Fan-in — *doing many things at once.***
+**Fan-out / Fan-in - *doing many things at once.***
 The orchestrator sends the image to **four workers simultaneously** instead of one after another. It then **waits for all four** to finish before moving on. In code this is `context.task_all([...])`.
 
-**Chaining — *doing things in a strict order.***
-After the four results come back, the app must **build the report first**, and only **then save it**. Saving needs the finished report, so these run one after another — like links in a chain.
+**Chaining - *doing things in a strict order.***
+After the four results come back, the app must **build the report first**, and only **then save it**. Saving needs the finished report, so these run one after another - like links in a chain.
 
 ---
 
@@ -111,7 +111,7 @@ flowchart TD
 | Image reading | `Pillow` (PIL) |
 | Storage SDKs | `azure-storage-blob`, `azure-data-tables` |
 | Local emulator | Azurite |
-| Cloud hosting | Azure Functions — **Flex Consumption** plan (Linux) |
+| Cloud hosting | Azure Functions - **Flex Consumption** plan (Linux) |
 | Cloud trigger | **Event Grid** based Blob trigger |
 | Result storage | Azure Table Storage |
 
@@ -167,7 +167,7 @@ flowchart TD
 
 ## The Interesting Problem I Solved (Event Grid + Flex Consumption)
 
-A normal blob trigger works by **constantly checking** the storage container for new files (polling). But Azure's **Flex Consumption** plan does **not** support that polling trigger — it only supports the **Event Grid** trigger.
+A normal blob trigger works by **constantly checking** the storage container for new files (polling). But Azure's **Flex Consumption** plan does **not** support that polling trigger - it only supports the **Event Grid** trigger.
 
 So the design uses `source="EventGrid"`: instead of the app constantly *checking* for files, **Azure pushes a notification** the instant a file is uploaded, and an **Event Grid subscription** delivers a "Blob Created" event straight to the function.
 
@@ -215,13 +215,7 @@ GET /api/results/Screenshot_2021-09-29_100039
 
 ## Design Note: why pass the blob name, not the bytes?
 
-The orchestrator passes the **blob name** to each activity, and each activity re-downloads the image. Durable Functions serializes every input/output to storage — pushing a multi-MB image through as raw bytes would bloat the orchestration state on every replay. Passing a small string (the name) and re-downloading is the scalable pattern.
-
----
-
-## AI Disclosure
-
-AI assistance (Anthropic's **Claude**) was used during this project for explaining Durable Functions concepts, scaffolding, and reviewing code.
+The orchestrator passes the **blob name** to each activity, and each activity re-downloads the image. Durable Functions serializes every input/output to storage - pushing a multi-MB image through as raw bytes would bloat the orchestration state on every replay. Passing a small string (the name) and re-downloading is the scalable pattern.
 
 ---
 
