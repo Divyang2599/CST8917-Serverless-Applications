@@ -11,7 +11,7 @@ Hi! This is my Lab 3 project for **CST8917**. In this lab I built **FleetBook**,
 
 ## 🎥 Demo Video
 
-▶️ **[Watch the FleetBook demo on YouTube](PASTE_YOUR_YOUTUBE_LINK_HERE)**
+▶️ **[Watch the FleetBook demo on YouTube](https://youtu.be/-cvSpsC1Rq0?si=Z2E2uCmiXSLWsUY-)**
 
 In the video I show:
 
