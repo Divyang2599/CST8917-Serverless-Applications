@@ -14,7 +14,7 @@ one keeps an audit log of every file that gets uploaded.
 | What | Link |
 |------|------|
 | GitHub Repo | `<paste your repo URL here>` |
-| Demo Video (YouTube) | `<paste your unlisted YouTube link here>` |
+| Demo Video (YouTube) | https://youtu.be/w6VUYQY19-U?si=eo2e6QwAtq4iwWAy |
 
 ---
 
