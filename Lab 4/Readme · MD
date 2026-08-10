@@ -1,0 +1,127 @@
+# PhotoPipe - Event-Driven Image Processing Pipeline
+
+**CST8917 - Serverless Applications | Lab 4**
+
+This is a small serverless app that processes images automatically when they are uploaded.
+When I upload a picture to Azure Blob Storage, Azure Event Grid notices the new file and
+sends an event to two Azure Functions. One function reads the image details, and the other
+one keeps an audit log of every file that gets uploaded.
+
+---
+
+## Links
+
+| What | Link |
+|------|------|
+| GitHub Repo | `<paste your repo URL here>` |
+| Demo Video (YouTube) | `<paste your unlisted YouTube link here>` |
+
+---
+
+## What it does
+
+- You upload a `.jpg` or `.png` from the web page (PhotoPipe).
+- The file goes straight into Blob Storage using a SAS token.
+- Event Grid sends a "Blob Created" event.
+- Two functions run automatically:
+  - **process-image** - only runs for images (`.jpg` / `.png`). It reads the image info and saves a JSON result.
+  - **audit-log** - runs for **every** file (even a `.txt`). It saves a record in Table Storage.
+- The web page shows the results and the audit log.
+
+So an image shows up in **both** Results and Audit Log, but a non-image file (like `.txt`)
+only shows up in the Audit Log. That is the whole point of the Event Grid filter.
+
+---
+
+## Architecture
+
+```
+Upload Image  --->  [ Blob Storage ]  --->  [ Event Grid ]  ---+--->  [ process-image() ]  --->  [ image-results ]
+                      image-uploads          System Topic       |
+                                                                 +--->  [ audit-log() ]    --->  [ Table Storage ]
+```
+
+---
+
+## Tech used
+
+- Azure Blob Storage (containers: `image-uploads`, `image-results`)
+- Azure Event Grid (system topic + 2 subscriptions with filters)
+- Azure Functions (Python v2 model)
+- Azure Table Storage (audit log)
+- HTML + JavaScript (the PhotoPipe web page)
+- SAS token for secure direct upload from the browser
+
+---
+
+## Project files
+
+| File | What it is |
+|------|-----------|
+| `function_app.py` | All 5 Azure Functions (process-image, audit-log, get-results, get-audit-log, health) |
+| `requirements.txt` | Python packages needed |
+| `host.json` | Functions host settings |
+| `client.html` | The PhotoPipe web page |
+| `test-function.http` | Test requests for the HTTP endpoints |
+| `local.settings.example.json` | Example settings file (copy it to `local.settings.json` and add your own keys) |
+| `.gitignore` | Files that should NOT be committed |
+| `README.md` | This file |
+
+> **Note:** `local.settings.json` is not in the repo on purpose because it has real keys.
+> Use `local.settings.example.json` as a template.
+
+---
+
+## How to set it up
+
+### 1. Storage Account
+- Create a Storage Account (Standard, LRS).
+- Turn ON "Allow Blob anonymous access".
+- Create two containers: `image-uploads` (Blob access) and `image-results` (Private).
+- Add a CORS rule on the **Blob service**: allowed origins `*`, methods `GET, PUT, OPTIONS, HEAD`, headers `*`.
+
+### 2. Function App
+- Copy `local.settings.example.json` to `local.settings.json` and paste your real storage connection string into `STORAGE_CONNECTION_STRING`.
+- Install packages: `pip install -r requirements.txt`
+- Run locally with `func start` (or press F5 in VS Code) to test.
+- Deploy the Function App to Azure.
+- In Azure, add an app setting called `STORAGE_CONNECTION_STRING` with your connection string.
+- Turn on CORS (`*`) for the Function App.
+
+### 3. Event Grid
+- Create an Event Grid System Topic on the storage account.
+- **Subscription 1 (process-image-sub):**
+  - Event type: `Blob Created`
+  - Endpoint: the `process-image` function
+  - Subject begins with: `/blobServices/default/containers/image-uploads`
+  - Advanced filter: `subject` ends with `.jpg` and `.png` (two separate values)
+- **Subscription 2 (audit-log-sub):**
+  - Event type: `Blob Created`
+  - Endpoint: the `audit-log` function
+  - Subject begins with: `/blobServices/default/containers/image-uploads`
+  - (No extension filter, so it logs every file.)
+
+### 4. Use the app
+- Open `client.html` in a browser.
+- Fill in: Storage Account Name, Function App URL, and a SAS token.
+- Upload an image and watch the Results and Audit Log update.
+
+---
+
+## Why some of these choices
+
+- **Container filter (`begins with image-uploads`)** stops the audit function from
+  triggering on files the process function writes into `image-results`. Without it you can
+  get an event loop.
+- **SAS token upload** lets the browser upload straight to Blob Storage without exposing the
+  account key, and without sending the file through the function.
+- **Two storage accounts** (one for my data, one auto-created for the Function App) is normal.
+  The Function App needs its own storage for its internal runtime state.
+
+---
+
+## What I learned
+
+- How Event Grid connects Blob Storage to Functions with no code to "publish" events.
+- How subject filters decide which function runs for which file type.
+- Why keeping secrets out of the repo matters (used a `.example` file instead).

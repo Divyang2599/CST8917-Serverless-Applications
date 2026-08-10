@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=<your-storage-account-name>;AccountKey=<your-account-key>;EndpointSuffix=core.windows.net"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

@@ -1,0 +1,187 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "When_a_message_is_received_in_a_queue_(auto-complete)": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": { "connection": { "name": "@parameters('$connections')['servicebus']['connectionId']" } },
+                    "method": "get",
+                    "path": "/@{encodeURIComponent(encodeURIComponent('expense-requests'))}/messages/head",
+                    "queries": { "queueType": "Main" }
+                },
+                "recurrence": { "interval": 3, "frequency": "Minute" }
+            }
+        },
+        "actions": {
+            "outcome": {
+                "type": "InitializeVariable",
+                "inputs": { "variables": [ { "name": "outcome", "type": "string" } ] },
+                "runAfter": {}
+            },
+            "reason": {
+                "type": "InitializeVariable",
+                "inputs": { "variables": [ { "name": "reason", "type": "string" } ] },
+                "runAfter": { "outcome": [ "Succeeded" ] }
+            },
+            "Parse_JSON": {
+                "type": "ParseJson",
+                "inputs": {
+                    "content": "@base64ToString(triggerBody()?['ContentData'])",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "employee_name": { "type": "string" },
+                            "employee_email": { "type": "string" },
+                            "amount": { "type": "number" },
+                            "category": { "type": "string" },
+                            "description": { "type": "string" },
+                            "manager_email": { "type": "string" }
+                        }
+                    }
+                },
+                "runAfter": { "reason": [ "Succeeded" ] }
+            },
+            "Validate_expense": {
+                "type": "Http",
+                "inputs": {
+                    "uri": "https://func-expense-validate-div2248664.azurewebsites.net/api/validate",
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "x-functions-key": "<FUNCTION_KEY_REDACTED>"
+                    },
+                    "body": "@base64ToString(triggerBody()?['ContentData'])"
+                },
+                "runAfter": { "Parse_JSON": [ "Succeeded" ] }
+            },
+            "Parse_validation": {
+                "type": "ParseJson",
+                "inputs": {
+                    "content": "@body('Validate_expense')",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "valid": { "type": "boolean" },
+                            "reason": { "type": "string" }
+                        }
+                    }
+                },
+                "runAfter": { "Validate_expense": [ "Succeeded" ] }
+            },
+            "Condition": {
+                "type": "If",
+                "expression": {
+                    "and": [
+                        { "equals": [ "@toLower(string(body('Parse_validation')?['valid']))", "true" ] }
+                    ]
+                },
+                "actions": {
+                    "Condition_1": {
+                        "type": "If",
+                        "expression": {
+                            "and": [
+                                { "less": [ "@float(body('Parse_JSON')?['amount'])", 100 ] }
+                            ]
+                        },
+                        "actions": {
+                            "Set_variable_2": {
+                                "type": "SetVariable",
+                                "inputs": { "name": "outcome", "value": "approved" }
+                            },
+                            "Set_variable_3": {
+                                "type": "SetVariable",
+                                "inputs": { "name": "reason", "value": "Auto-approved (under $100)." },
+                                "runAfter": { "Set_variable_2": [ "Succeeded" ] }
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "Send_approval_email": {
+                                    "type": "ApiConnectionWebhook",
+                                    "inputs": {
+                                        "host": { "connection": { "name": "@parameters('$connections')['office365']['connectionId']" } },
+                                        "body": {
+                                            "NotificationUrl": "@listCallbackUrl()",
+                                            "Message": {
+                                                "To": "@body('Parse_JSON')?['manager_email']",
+                                                "Body": "Employee @{body('Parse_JSON')?['employee_name']} is requesting $@{body('Parse_JSON')?['amount']} for @{body('Parse_JSON')?['description']}. Please Approve or Reject.",
+                                                "Importance": "Normal",
+                                                "HideHTMLMessage": false,
+                                                "ShowHTMLConfirmationDialog": false,
+                                                "Subject": "Expense approval needed: @{body('Parse_JSON')?['description']}",
+                                                "Options": "Approve, Reject"
+                                            }
+                                        },
+                                        "path": "/approvalmail/$subscriptions"
+                                    },
+                                    "limit": { "timeout": "PT2M" }
+                                },
+                                "Set_variable_4": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "outcome",
+                                        "value": "@if(equals(body('Send_approval_email')?['SelectedOption'],'Approve'),'approved',if(equals(body('Send_approval_email')?['SelectedOption'],'Reject'),'rejected','escalated'))"
+                                    },
+                                    "runAfter": { "Send_approval_email": [ "Succeeded", "TimedOut", "Failed" ] }
+                                },
+                                "Set_variable_5": {
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                        "name": "reason",
+                                        "value": "@if(equals(variables('outcome'),'approved'),'Manager approved.',if(equals(variables('outcome'),'rejected'),'Manager rejected.','No manager response within timeout; auto-approved and escalated.'))"
+                                    },
+                                    "runAfter": { "Set_variable_4": [ "Succeeded" ] }
+                                }
+                            }
+                        }
+                    }
+                },
+                "else": {
+                    "actions": {
+                        "Set_variable": {
+                            "type": "SetVariable",
+                            "inputs": { "name": "outcome", "value": "rejected" }
+                        },
+                        "Set_variable_1": {
+                            "type": "SetVariable",
+                            "inputs": { "name": "reason", "value": "@body('Parse_validation')?['reason']" },
+                            "runAfter": { "Set_variable": [ "Succeeded" ] }
+                        }
+                    }
+                },
+                "runAfter": { "Parse_validation": [ "Succeeded" ] }
+            },
+            "Send_message": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": { "connection": { "name": "@parameters('$connections')['servicebus-1']['connectionId']" } },
+                    "method": "post",
+                    "body": {
+                        "ContentData": "@triggerBody()?['ContentData']",
+                        "Properties": "@json(concat('{\"outcome\":\"', variables('outcome'), '\"}'))"
+                    },
+                    "path": "/@{encodeURIComponent(encodeURIComponent('expense-outcomes'))}/messages",
+                    "queries": { "systemProperties": "None" }
+                },
+                "runAfter": { "Condition": [ "Succeeded" ] }
+            },
+            "Send_an_email_(V2)": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": { "connection": { "name": "@parameters('$connections')['office365']['connectionId']" } },
+                    "method": "post",
+                    "body": {
+                        "To": "@body('Parse_JSON')?['employee_email']",
+                        "Subject": "Expense @{variables('outcome')}",
+                        "Body": "<p>Hello @{body('Parse_JSON')?['employee_name']},<br><br>Your expense @{body('Parse_JSON')?['description']} for $@{body('Parse_JSON')?['amount']} has been @{variables('outcome')}<br>Reason: @{variables('reason')}<br><br>This is an automated notification from the Expense Approval system.</p>"
+                    },
+                    "path": "/v2/Mail"
+                },
+                "runAfter": { "Send_message": [ "Succeeded" ] }
+            }
+        },
+        "outputs": {}
+    }
+}

@@ -1,0 +1,107 @@
+### CST8917 A2 - Version A: Durable Functions local tests
+### Requires the "REST Client" extension. Run "func start" first.
+
+@host = http://localhost:7071
+
+### ---------------------------------------------------------------------------
+### Scenario 1: Valid expense UNDER $100  -> expected: APPROVED (auto)
+### ---------------------------------------------------------------------------
+POST {{host}}/api/submit-expense
+Content-Type: application/json
+
+{
+  "employee_name": "Divyang Lodariya",
+  "employee_email": "employee@example.com",
+  "amount": 45,
+  "category": "meals",
+  "description": "Team lunch",
+  "manager_email": "manager@example.com"
+}
+### Open the "statusQueryGetUri" link in the response ->
+###   "runtimeStatus": "Completed", "output": { "status": "approved", ... }
+
+
+### ---------------------------------------------------------------------------
+### Scenario 2: >= $100, manager APPROVES -> expected: APPROVED
+### Step 2a - submit, copy the "id" from the response
+### ---------------------------------------------------------------------------
+POST {{host}}/api/submit-expense
+Content-Type: application/json
+
+{
+  "employee_name": "Divyang Lodariya",
+  "employee_email": "employee@example.com",
+  "amount": 750,
+  "category": "travel",
+  "description": "Flight to Azure conference",
+  "manager_email": "manager@example.com"
+}
+
+### Step 2b - paste the id below, then send approval
+@instanceId2 = PASTE_INSTANCE_ID_HERE
+POST {{host}}/api/approve/{{instanceId2}}?decision=approved
+
+
+### ---------------------------------------------------------------------------
+### Scenario 3: >= $100, manager REJECTS -> expected: REJECTED
+### ---------------------------------------------------------------------------
+POST {{host}}/api/submit-expense
+Content-Type: application/json
+
+{
+  "employee_name": "Divyang Lodariya",
+  "employee_email": "employee@example.com",
+  "amount": 300,
+  "category": "equipment",
+  "description": "Standing desk",
+  "manager_email": "manager@example.com"
+}
+
+@instanceId3 = PASTE_INSTANCE_ID_HERE
+POST {{host}}/api/approve/{{instanceId3}}?decision=rejected
+
+
+### ---------------------------------------------------------------------------
+### Scenario 4: >= $100, NO manager response -> expected: ESCALATED
+### Submit only. Do NOT approve. Wait 120s, then check statusQueryGetUri.
+### ---------------------------------------------------------------------------
+POST {{host}}/api/submit-expense
+Content-Type: application/json
+
+{
+  "employee_name": "Divyang Lodariya",
+  "employee_email": "employee@example.com",
+  "amount": 999,
+  "category": "software",
+  "description": "Annual JetBrains license",
+  "manager_email": "manager@example.com"
+}
+
+
+### ---------------------------------------------------------------------------
+### Scenario 5: MISSING required fields -> VALIDATION ERROR (rejected)
+### ---------------------------------------------------------------------------
+POST {{host}}/api/submit-expense
+Content-Type: application/json
+
+{
+  "employee_name": "Divyang Lodariya",
+  "employee_email": "employee@example.com",
+  "description": "Missing amount, category, manager_email"
+}
+
+
+### ---------------------------------------------------------------------------
+### Scenario 6: INVALID category -> VALIDATION ERROR (rejected)
+### ---------------------------------------------------------------------------
+POST {{host}}/api/submit-expense
+Content-Type: application/json
+
+{
+  "employee_name": "Divyang Lodariya",
+  "employee_email": "employee@example.com",
+  "amount": 200,
+  "category": "entertainment",
+  "description": "Concert tickets",
+  "manager_email": "manager@example.com"
+}
