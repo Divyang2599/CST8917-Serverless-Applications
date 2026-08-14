@@ -7,7 +7,7 @@
 | **Course** | CST8917 - Serverless Applications |
 | **Assignment** | Assignment 2 - Compare & Contrast |
 | **Date** | August 2, 2026 |
-| **Youtube Link** |  |
+| **Youtube Link** | 'https://youtu.be/XidYVmKCRTk?si=O_-8rAgWkNxBUpdP'  |
 
 
 ---
